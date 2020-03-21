@@ -13,21 +13,33 @@ extern crate systemstat;
 use chan_signal::Signal;
 use systemstat::{Platform, System};
 
+fn covid_stat() -> String {
+    if let Ok(r) = Command::new("/home/livvy/.local/bin/covidstatprint").output() {
+        let s = match std::str::from_utf8(&r.stdout) {
+            Ok(v) => v,
+            Err(e) => panic!("Invalid UTF-8 sequence: {}", e),
+        };
+        format!("☣{}", s.to_string().replace("\n", ""))
+    } else {
+       "Failed to get COVID-19 stats".to_string()
+    }
+}
+
 fn plugged(sys: &System) -> String {
     if let Ok(plugged) = sys.on_ac_power() {
         if plugged {
-            "🔌 ✓".to_string()
+            "✓".to_string()
         } else {
-            "🔌 ✘".to_string()
+            "✘".to_string()
         }
     } else {
-        "🔌".to_string()
+        "-".to_string()
     }
 }
 
 fn battery(sys: &System) -> String {
     if let Ok(bat) = sys.battery_life() {
-        format!("🔋 {:.1}%", bat.remaining_capacity * 100.)
+        format!("⚡ {:.1}%", bat.remaining_capacity * 100.)
     } else {
         "".to_string()
     }
@@ -36,30 +48,30 @@ fn battery(sys: &System) -> String {
 fn ram(sys: &System) -> String {
     if let Ok(mem) = sys.memory() {
         let used = mem.total - mem.free;
-        format!("▯ {}", used)
+        format!("▦ {}", used)
     } else {
-        "▯ _".to_string()
+        "▦ _".to_string()
     }
 }
 
 fn cpu(sys: &System) -> String {
     if let Ok(load) = sys.load_average() {
-        format!("⚙ {:.2}", load.one)
+        format!("▱ {:.2}", load.one)
     } else {
-        "⚙ _".to_string()
+        "▱ _".to_string()
     }
 }
 
 fn date() -> String {
-    chrono::Local::now().format("📆 %a, %d %h ⸱ 🕓 %R").to_string()
+    chrono::Local::now().format("%D %R").to_string()
 }
 
 fn separated(s: String) -> String {
-    if s == "" { s } else { s + " ⸱ " }
+    if s == "" { s } else { s + " | " }
 }
 
 fn status(sys: &System) -> String {
-    separated(plugged(sys)) + &separated(battery(sys)) + &separated(ram(sys)) +
+    separated(covid_stat()) + &separated(battery(sys)) + &separated(ram(sys)) +
     &separated(cpu(sys)) + &date()
 }
 
